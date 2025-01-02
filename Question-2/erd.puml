@@ -1,0 +1,78 @@
+@startuml erd
+
+entity "Admin" {
+    + admin_id <<PK>>
+    --
+    name: string
+}
+
+entity "Customer" {
+    + customer_id <<PK>>
+    --
+    name: string
+    address: string
+    email: string
+    phone_number: string
+    gender: enum
+}
+
+entity "Cart" {
+    + cart_id <<PK>>
+    --
+    customer_id: int <<FK>>
+    product_id: int <<FK>>
+    quantity: int
+}
+
+entity "Cart_Item" {
+    + cart_item_id <<PK>>
+    --
+    cart_id: int <<FK>>
+    product_id: int <<FK>>
+    quantity: int
+}
+
+entity "Product" {
+    + product_id <<PK>>
+    --
+    agency_id: int <<FK>>
+    name: string
+    price: decimal
+}
+
+entity "Transaction" {
+    + transaction_id <<PK>>
+    --
+    customer_id: int <<FK>>
+    agency_id: int <<FK>>
+    amount: Decimal
+    transaction_date: Date
+}
+
+entity "Billing" {
+    + billing_id <<PK>>
+    --
+    transaction_id: int <<FK>>
+    total_amount: Decimal
+}
+
+entity "Agency" {
+    + agency_id <<PK>>
+    --
+    name: string
+    address: string
+    email: string
+    phone_number: string
+    gender: enum
+}
+
+Admin ||--o{ Agency: manages
+Agency ||--o{ Product: sells
+Agency ||--o{ Transaction: participates in
+Customer ||--o{ Transaction: makes
+Customer ||--|| Cart: owns
+Cart ||-o{ Cart_Item: contains
+Cart_Item ||--|| Product: linked to
+Transaction ||--|| Billing: linked to
+
+@enduml
