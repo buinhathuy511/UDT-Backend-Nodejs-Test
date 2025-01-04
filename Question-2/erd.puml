@@ -1,78 +1,89 @@
 @startuml erd
 
-entity "Admin" {
-    + admin_id <<PK>>
+entity "User" {
+    + user_id <<PK>>
     --
-    name: string
-}
-
-entity "Customer" {
-    + customer_id <<PK>>
-    --
+    username: string
+    password: string
     name: string
     address: string
     email: string
     phone_number: string
     gender: enum
+    role: enum
+}
+
+entity "Admin" {
+}
+
+entity "Agency" {
+}
+
+entity "Customer" {
 }
 
 entity "Cart" {
     + cart_id <<PK>>
     --
-    customer_id: int <<FK>>
-    product_id: int <<FK>>
-    quantity: int
+    customer_id <<FK>>
 }
 
 entity "Cart_Item" {
     + cart_item_id <<PK>>
     --
-    cart_id: int <<FK>>
-    product_id: int <<FK>>
+    cart_id <<FK>>
+    product_id <<FK>>
     quantity: int
-}
-
-entity "Product" {
-    + product_id <<PK>>
-    --
-    agency_id: int <<FK>>
-    name: string
-    price: decimal
 }
 
 entity "Transaction" {
     + transaction_id <<PK>>
     --
-    customer_id: int <<FK>>
-    agency_id: int <<FK>>
+    customer_id <<FK>>
+    agency_id <<FK>>
     amount: Decimal
     transaction_date: Date
 }
 
-entity "Billing" {
-    + billing_id <<PK>>
+entity "Transaction_Item" {
+    + transaction_item_id <<PK>>
     --
-    transaction_id: int <<FK>>
+    transaction_id <<FK>>
+    product_id <<FK>>
+    quantity: int
     total_amount: Decimal
 }
 
-entity "Agency" {
-    + agency_id <<PK>>
+entity "Product" {
+    + product_id <<PK>>
     --
+    agency_id <<FK>>
     name: string
-    address: string
-    email: string
-    phone_number: string
-    gender: enum
+    price: decimal
 }
+
+
+entity "Billing" {
+    + billing_id <<PK>>
+    --
+    transaction_id <<FK>>
+    total_amount: Decimal
+}
+
+User ||--|| Admin: is a
+User ||--|| Customer: is a
+User ||--|| Agency: is a
 
 Admin ||--o{ Agency: manages
 Agency ||--o{ Product: sells
 Agency ||--o{ Transaction: participates in
 Customer ||--o{ Transaction: makes
 Customer ||--|| Cart: owns
+
 Cart ||-o{ Cart_Item: contains
-Cart_Item ||--|| Product: linked to
+Product ||--o{ Cart_Item: linked to
+Product ||--o{ Transaction_Item: linked to
 Transaction ||--|| Billing: linked to
+Transaction ||-o{ Transaction_Item: contains
 
 @enduml
