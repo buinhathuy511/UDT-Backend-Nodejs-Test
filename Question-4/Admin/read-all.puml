@@ -1,0 +1,17 @@
+@startuml
+
+actor Admin
+entity Browser
+entity Server
+database Database
+
+' Admin: Đọc thông tin billing, transaction, product, agency, customer
+Admin -> Browser: Yêu cầu đọc thông tin billing, transaction, product, agency, customer
+Browser -> Server: Gửi yêu cầu đọc thông tin billing, transaction, product, agency, customer
+Browser -> Server: GET /api/billing, /api/transaction, /api/product, /api/agency, /api/customer (kèm JWT token)
+Server -> Database: Xác thực token và truy vấn lấy thông tin
+Database --> Server: Thông tin billing, transaction, product, agency, customer
+Server --> Browser: Trả về thông tin billing, transaction, product, agency, customer
+Browser --> Admin: Hiển thị thông tin billing, transaction, product, agency, customer
+
+@enduml

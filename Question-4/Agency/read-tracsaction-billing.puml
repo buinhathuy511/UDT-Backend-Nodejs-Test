@@ -1,0 +1,17 @@
+@startuml
+
+actor Agency
+entity Browser
+entity Server
+database Database
+
+' Agency: Đọc thông tin giao dịch/hoá đơn
+Agency -> Browser: Yêu cầu đọc thông tin giao dịch/hoá đơn
+Browser -> Server: Gửi yêu cầu đọc thông tin giao dịch/hoá đơn
+Browser -> Server: GET /api/transaction/, /api/billing (kèm JWT token)
+Server -> Database: Xác thực token và truy vấn lấy thông tin
+Database --> Server: Thông tin giao dịch/hoá đơn
+Server --> Browser: Trả về thông tin giao dịch/hoá đơn
+Browser --> Agency: Hiển thị thông tin giao dịch/hoá đơn
+
+@enduml

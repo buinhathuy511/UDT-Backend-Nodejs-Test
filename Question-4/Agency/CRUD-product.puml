@@ -1,0 +1,17 @@
+@startuml
+
+actor Agency
+entity Browser
+entity Server
+database Database
+
+' Agency: CRUD product
+Agency -> Browser: Yêu cầu đọc, tạo, sửa, xoá sản phẩm
+Browser -> Server: Gửi yêu cầu đọc, tạo, sửa, xoá sản phẩm
+Browser -> Server: (GET/POST/PUT/DELETE) /api/product/ (kèm JWT token)
+Server -> Database: Xác thực token và thực hiện thao tác CRUD
+Database --> Server: Kết quả thao tác CRUD
+Server --> Browser: Trả về kết quả thao tác CRUD
+Browser --> Agency: Hiển thị kết quả thao tác CRUD
+
+@enduml

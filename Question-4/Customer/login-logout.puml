@@ -1,0 +1,32 @@
+@startuml
+
+actor Customer
+entity Browser
+entity Server
+database Database
+
+' Customer: Đăng nhập
+Customer -> Browser: Yêu cầu đăng nhập
+Browser -> Server: username + password
+Browser -> Server: POST /api/auth/login
+Server -> Database: Kiểm tra thông tin đăng nhập và vai trò
+Database --> Server: Thông tin hợp lệ/không hợp lệ + role
+alt Đăng nhập thành công
+    Server -> Server: Tạo JWT token
+    Server --> Browser: Trả về JWT token
+    Browser -> Browser: Lưu JWT token
+    Browser --> Customer: Đăng nhập thành công
+else Đăng nhập thất bại
+    Server --> Browser: Thông báo lỗi
+    Browser --> Customer: Hiển thị thông báo lỗi
+end
+
+' Customer: Đăng xuất
+Customer -> Browser: Yêu cầu đăng xuất
+Browser -> Server: Gửi yêu cầu xác nhận đăng xuất (kèm JWT token)
+Browser -> Server: POST /api/auth/login
+Server --> Browser: Xác nhận đăng xuất
+Browser --> Browser: Xóa JWT token trên local storage
+Browser --> Customer: Đăng xuất thành công
+
+@enduml
