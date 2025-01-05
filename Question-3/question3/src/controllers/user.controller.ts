@@ -1,4 +1,16 @@
+import {authenticate, TokenService} from '@loopback/authentication';
 import {
+  Credentials,
+  MyUserService,
+  TokenServiceBindings,
+  User,
+  UserRepository,
+  UserServiceBindings,
+} from '@loopback/authentication-jwt';
+import {inject} from '@loopback/core';
+import {
+  model,
+  property,
   Count,
   CountSchema,
   Filter,
@@ -16,135 +28,189 @@ import {
   del,
   requestBody,
   response,
+  SchemaObject,
 } from '@loopback/rest';
-import {User} from '../models';
-import {UserRepository} from '../repositories';
+import {SecurityBindings, UserProfile, securityId} from '@loopback/security';
+import {genSalt, hash, compare} from 'bcryptjs';
+import _ from 'lodash';
+
+// @model()
+// export class NewUserRequest extends User {
+//   @property({
+//     type: 'string',
+//     required: true,
+//   })
+//   password: string;
+// }
+
+const CredentialsSchema: SchemaObject = {
+  type: 'object',
+  required: ['username', 'password'],
+  properties: {
+    username: {
+      type: 'string',
+    },
+    password: {
+      type: 'string',
+    },
+  },
+};
+
+export const CredentialsRequestBody = {
+  description: 'The input of login function',
+  required: true,
+  content: {
+    'application/json': {schema: CredentialsSchema},
+  },
+};
 
 export class UserController {
   constructor(
-    @repository(UserRepository)
-    public userRepository : UserRepository,
+    @inject(TokenServiceBindings.TOKEN_SERVICE)
+    public jwtService: TokenService,
+    @inject(UserServiceBindings.USER_SERVICE)
+    public userService: MyUserService,
+    @inject(SecurityBindings.USER, {optional: true})
+    public user: UserProfile,
+    @repository(UserRepository) protected userRepository: UserRepository,
   ) {}
 
-  @post('/users')
+  // Hash password
+  private async hashPassword(password: string): Promise<string> {
+    const salt = await genSalt(10);
+    return hash(password, salt);
+  }
+
+  // Define the schema for the request body register
+  private static RegisterSchema: SchemaObject = {
+    type: 'object',
+    required: ['username', 'password'],
+    properties: {
+      username: {type: 'string'},
+      password: {type: 'string'},
+      name: {type: 'string'},
+      address: {type: 'string'},
+      email: {type: 'string'},
+      phone_number: {type: 'string'},
+      gender: {type: 'string'},
+    },
+  };
+
+  // Customer registration
+  @post('/users/customer/register')
   @response(200, {
-    description: 'User model instance',
-    content: {'application/json': {schema: getModelSchemaRef(User)}},
+    description: 'User registration',
+    content: {
+      'application/json': {
+        schema: UserController.RegisterSchema,
+      },
+    },
   })
-  async create(
+  async registerCustomer(
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRef(User, {
-            title: 'NewUser',
-            exclude: ['user_id'],
-          }),
+          schema: UserController.RegisterSchema,
         },
       },
     })
     user: Omit<User, 'user_id'>,
   ): Promise<User> {
-    return this.userRepository.create(user);
+    user.role = 'customer';
+    if (!user.password) {
+      throw new Error('Password is required');
+    }
+    const hashedPassword = await this.hashPassword(user.password);
+    user.password = hashedPassword;
+
+    const createdUser = await this.userRepository.create(user);
+    await this.userRepository
+      .userCredentials(createdUser.user_id)
+      .create({password: hashedPassword});
+    delete createdUser.password;
+    return createdUser; // save user to database
   }
 
-  @get('/users/count')
+  // Agency registration
+  @post('/users/agency/register')
   @response(200, {
-    description: 'User model count',
-    content: {'application/json': {schema: CountSchema}},
-  })
-  async count(
-    @param.where(User) where?: Where<User>,
-  ): Promise<Count> {
-    return this.userRepository.count(where);
-  }
-
-  @get('/users')
-  @response(200, {
-    description: 'Array of User model instances',
+    description: 'User registration',
     content: {
       'application/json': {
-        schema: {
-          type: 'array',
-          items: getModelSchemaRef(User, {includeRelations: true}),
-        },
+        schema: UserController.RegisterSchema,
       },
     },
   })
-  async find(
-    @param.filter(User) filter?: Filter<User>,
-  ): Promise<User[]> {
-    return this.userRepository.find(filter);
-  }
-
-  @patch('/users')
-  @response(200, {
-    description: 'User PATCH success count',
-    content: {'application/json': {schema: CountSchema}},
-  })
-  async updateAll(
+  async registerAgency(
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRef(User, {partial: true}),
+          schema: UserController.RegisterSchema,
         },
       },
     })
-    user: User,
-    @param.where(User) where?: Where<User>,
-  ): Promise<Count> {
-    return this.userRepository.updateAll(user, where);
-  }
-
-  @get('/users/{id}')
-  @response(200, {
-    description: 'User model instance',
-    content: {
-      'application/json': {
-        schema: getModelSchemaRef(User, {includeRelations: true}),
-      },
-    },
-  })
-  async findById(
-    @param.path.string('id') id: string,
-    @param.filter(User, {exclude: 'where'}) filter?: FilterExcludingWhere<User>
+    user: Omit<User, 'user_id'>,
   ): Promise<User> {
-    return this.userRepository.findById(id, filter);
+    user.role = 'agency';
+    if (!user.password) {
+      throw new Error('Password is required');
+    }
+    const hashedPassword = await this.hashPassword(user.password);
+    user.password = hashedPassword;
+
+    const createdUser = await this.userRepository.create(user);
+    await this.userRepository
+      .userCredentials(createdUser.user_id)
+      .create({password: hashedPassword});
+    delete createdUser.password;
+    return createdUser; // save user to database
   }
 
-  @patch('/users/{id}')
-  @response(204, {
-    description: 'User PATCH success',
-  })
-  async updateById(
-    @param.path.string('id') id: string,
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(User, {partial: true}),
-        },
+  // User login
+  @post('/users/login')
+  @response(200, {
+    description: 'User login',
+    content: {
+      'application/json': {
+        schema: {type: 'object', properties: {token: {type: 'string'}}},
       },
-    })
-    user: User,
-  ): Promise<void> {
-    await this.userRepository.updateById(id, user);
-  }
-
-  @put('/users/{id}')
-  @response(204, {
-    description: 'User PUT success',
+    },
   })
-  async replaceById(
-    @param.path.string('id') id: string,
-    @requestBody() user: User,
-  ): Promise<void> {
-    await this.userRepository.replaceById(id, user);
-  }
+  async userLogin(
+    @requestBody(CredentialsRequestBody) credentials: Credentials,
+  ): Promise<{token: string}> {
+    const foundUser = await this.userRepository.findOne({
+      where: {username: credentials.username},
+    });
 
-  @del('/users/{id}')
-  @response(204, {
-    description: 'User DELETE success',
-  })
-  async deleteById(@param.path.string('id') id: string): Promise<void> {
-    await this.userRepository.deleteById(id);
+    if (!foundUser) {
+      throw new Error('Invalid username or password.');
+    }
+
+    const userCredentials = await this.userRepository.findCredentials(
+      foundUser.user_id,
+    );
+
+    if (!userCredentials) {
+      throw new Error('Invalid username or password.');
+    }
+
+    const passwordMatched = await compare(
+      credentials.password,
+      userCredentials.password,
+    );
+
+    if (!passwordMatched) {
+      throw new Error('Invalid username or password.');
+    }
+
+    const userProfile: UserProfile = {
+      [securityId]: foundUser.user_id,
+      id: foundUser.user_id,
+      name: foundUser.username,
+    };
+
+    const token = await this.jwtService.generateToken(userProfile);
+    return {token};
   }
 }
