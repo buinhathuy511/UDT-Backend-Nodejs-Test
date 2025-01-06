@@ -66,3 +66,7 @@
 - Nhược điểm:
   - Truy vấn ít linh hoạt khi cần thực hiện các truy vấn phức tạp.
   - Không tuân thủ ACID mạnh mẽ như các hệ quản trị cơ sở dữ liệu quan hệ
+
+### Câu 4:
+
+Video demo: https://www.loom.com/share/3d15dd550acc4bf3a332fc62d768ee2a?sid=fb645095-ca47-451d-95d6-c212fdd60041

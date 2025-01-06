@@ -16,10 +16,6 @@ export class UserCredentials extends Entity {
   })
   password: string;
 
-  // @property({
-  //   type: 'string',
-  //   required: true,
-  // })
   @belongsTo(() => User)
   userId: string; // Chỉ định mối quan hệ khóa ngoại đến User
 

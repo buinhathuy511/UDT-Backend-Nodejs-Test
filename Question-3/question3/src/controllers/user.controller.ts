@@ -34,15 +34,6 @@ import {SecurityBindings, UserProfile, securityId} from '@loopback/security';
 import {genSalt, hash, compare} from 'bcryptjs';
 import _ from 'lodash';
 
-// @model()
-// export class NewUserRequest extends User {
-//   @property({
-//     type: 'string',
-//     required: true,
-//   })
-//   password: string;
-// }
-
 const CredentialsSchema: SchemaObject = {
   type: 'object',
   required: ['username', 'password'],
@@ -117,17 +108,13 @@ export class UserController {
     user: Omit<User, 'user_id'>,
   ): Promise<User> {
     user.role = 'customer';
-    if (!user.password) {
-      throw new Error('Password is required');
-    }
     const hashedPassword = await this.hashPassword(user.password);
-    user.password = hashedPassword;
+    const userWithoutPassword = _.omit(user, 'password');
 
-    const createdUser = await this.userRepository.create(user);
+    const createdUser = await this.userRepository.create(userWithoutPassword);
     await this.userRepository
       .userCredentials(createdUser.user_id)
       .create({password: hashedPassword});
-    delete createdUser.password;
     return createdUser; // save user to database
   }
 
@@ -152,17 +139,13 @@ export class UserController {
     user: Omit<User, 'user_id'>,
   ): Promise<User> {
     user.role = 'agency';
-    if (!user.password) {
-      throw new Error('Password is required');
-    }
     const hashedPassword = await this.hashPassword(user.password);
-    user.password = hashedPassword;
+    const userWithoutPassword = _.omit(user, 'password');
 
-    const createdUser = await this.userRepository.create(user);
+    const createdUser = await this.userRepository.create(userWithoutPassword);
     await this.userRepository
       .userCredentials(createdUser.user_id)
       .create({password: hashedPassword});
-    delete createdUser.password;
     return createdUser; // save user to database
   }
 
